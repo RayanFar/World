@@ -122,6 +122,7 @@ public class TestImage extends SimpleApplication
         
         // Create the world based on heightmap images.
         world = new ImageBasedWorld(this, terrainListener, 65, 129, 256);
+        // world.setWorldScale(new Vector3f(2, 0, 2));
         
         // Attach to the state manager so we can monitor movement.
         this.stateManager.attach(world);

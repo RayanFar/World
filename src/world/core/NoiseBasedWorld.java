@@ -42,11 +42,11 @@ public class NoiseBasedWorld extends World
         
         float[] heightmap = getHeightmap(location);
         tq = new TerrainQuad(tqName, this.getPatchSize(), this.getBlockSize(), heightmap);
-        tq.setLocalScale(new Vector3f(this.getWorldScale().getX(), this.getWorldHeight(), this.getWorldScale().getZ()));
+        tq.setLocalScale(new Vector3f(this.getWorldScale(), this.getWorldHeight(), this.getWorldScale()));
         
         Vector3f pos = this.fromTerrainLocation(location);
-        float scaledX = pos.getX() * this.getWorldScale().getX();
-        float scaledZ = pos.getZ() * this.getWorldScale().getZ();
+        float scaledX = pos.getX() * this.getWorldScale();
+        float scaledZ = pos.getZ() * this.getWorldScale();
         
         tq.setLocalTranslation(scaledX, 0, scaledZ);
         

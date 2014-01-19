@@ -63,8 +63,8 @@ public class ImageBasedWorld extends World
         tq = new TerrainQuad(tqName, this.getPatchSize(), this.getBlockSize(), heightmap);
         
         Vector3f pos = this.fromTerrainLocation(location);
-        float scaledX = pos.getX() * this.getWorldScale().getX();
-        float scaledZ = pos.getZ() * this.getWorldScale().getZ();
+        float scaledX = pos.getX() * this.getWorldScale();
+        float scaledZ = pos.getZ() * this.getWorldScale();
         
         tq.setLocalTranslation(scaledX, 0, scaledZ);
         

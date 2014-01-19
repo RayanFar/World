@@ -37,9 +37,8 @@ public abstract class World extends AbstractAppState implements IWorld, Closeabl
     
     private float worldHeight = 256f;
     
-    private Vector3f worldScale = new Vector3f(1, 1, 1);
+    private int worldScale = 1;
     
-    private Material terrainMaterial;
     private TerrainListener terrainListener;
     private ScheduledThreadPoolExecutor threadpool = new ScheduledThreadPoolExecutor(Runtime.getRuntime().availableProcessors());
     
@@ -83,11 +82,8 @@ public abstract class World extends AbstractAppState implements IWorld, Closeabl
     public int getThreadPoolCount() { return threadpool.getPoolSize(); }
     public void setThreadPoolCount(int threadcount) { threadpool.setCorePoolSize(threadcount); }
 
-    public Material getMaterial() { return this.terrainMaterial; }
-    public void setMaterial(Material material) { this.terrainMaterial = material; }
-    
-    public int getPositionAdjustment() { return this.positionAdjustment; }
-    public void setPositionAdjustment(int value) { this.positionAdjustment = value; }
+    protected int getPositionAdjustment() { return this.positionAdjustment; }
+    protected void setPositionAdjustment(int value) { this.positionAdjustment = value; }
 
     public int getPatchSize() { return this.patchSize; }
     public int getBlockSize() { return this.blockSize; }
@@ -101,8 +97,12 @@ public abstract class World extends AbstractAppState implements IWorld, Closeabl
     
     public boolean isLoaded() { return this.isLoaded; }
     
-    public void setWorldScale(Vector3f scale) { this.worldScale = scale; }
-    public Vector3f getWorldScale() { return this.worldScale; }
+    public int getWorldScale() { return this.worldScale; }
+    public void setWorldScale(int scale) 
+    { 
+        this.worldScale = scale;
+        this.setPositionAdjustment(((blockSize - 1) / 2) / this.worldScale);
+    }
     
     public int bitCalc(int blockSize)
     {
@@ -191,10 +191,11 @@ public abstract class World extends AbstractAppState implements IWorld, Closeabl
             lodControl.setExecutor(threadpool);
             pending.addControl(lodControl);
             
-            Vector3f scaledPos = new Vector3f(pending.getWorldTranslation().getX() / this.getWorldScale().getX(), 0, pending.getWorldTranslation().getZ() / this.getWorldScale().getZ());
+            Vector3f scaledPos = new Vector3f(pending.getWorldTranslation().getX() / this.getWorldScale(), 0, pending.getWorldTranslation().getZ() / this.getWorldScale());
             
             worldTiles.put(this.toTerrainLocation(scaledPos), pending);
             app.getRootNode().attachChild(pending);
+            
             app.getStateManager().getState(BulletAppState.class).getPhysicsSpace().add(pending);
 
             return true;
@@ -247,7 +248,7 @@ public abstract class World extends AbstractAppState implements IWorld, Closeabl
                             public void run()
                             {
                                 TerrainQuad newChunk = getTerrainQuad(location);
-
+                                
                                 // fire the terrainLoadedThreaded event
                                 terrainLoadedThreaded(newChunk);
 

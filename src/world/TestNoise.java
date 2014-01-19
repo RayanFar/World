@@ -158,7 +158,9 @@ public class TestNoise extends SimpleApplication
         
         // create the world based on noise.
         world = new NoiseBasedWorld(this, ground, terrainListener, 65, 129, 256);
-        world.setWorldScale(new Vector3f(2, 2, 2));
+        world.setWorldScale(2);
+        world.setViewDistance(3);
+        
         
         // Attach to the state manager so we can monitor movement.
         this.stateManager.attach(world);

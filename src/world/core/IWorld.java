@@ -20,9 +20,6 @@ public interface IWorld
     int getThreadPoolCount();
     void setThreadPoolCount(int threadcount);
     
-    Material getMaterial();
-    void setMaterial(Material material);
-    
     int getPatchSize();
     int getBlockSize();
     
@@ -35,14 +32,14 @@ public interface IWorld
     
     TerrainQuad getTerrainQuad(Vector3f location);
     
-    int getPositionAdjustment();
-    void setPositionAdjustment(int value);
+    // int getPositionAdjustment();
+    // void setPositionAdjustment(int value);
     
     boolean isLoaded();
     
     Vector3f toTerrainLocation(Vector3f location);
     Vector3f fromTerrainLocation(Vector3f location);
     
-    void setWorldScale(Vector3f scale);
-    Vector3f getWorldScale();
+    void setWorldScale(int scale);
+    int getWorldScale();
 }

@@ -1,6 +1,5 @@
 package world.core;
 
-import com.jme3.material.Material;
 import com.jme3.math.Vector3f;
 import com.jme3.terrain.geomipmap.TerrainQuad;
 
@@ -24,22 +23,15 @@ public interface IWorld
     int getBlockSize();
     
     boolean terrainLoaded(TerrainQuad terrainQuad);
-    void terrainLoadedThreaded(TerrainQuad terrainQuad);
     boolean terrainUnloaded(TerrainQuad terrainQuad);
-    
-    TerrainListener getTerrainListener();
-    void setTerrainListener(TerrainListener listener);
     
     TerrainQuad getTerrainQuad(Vector3f location);
     
-    // int getPositionAdjustment();
-    // void setPositionAdjustment(int value);
-    
     boolean isLoaded();
     
-    Vector3f toTerrainLocation(Vector3f location);
-    Vector3f fromTerrainLocation(Vector3f location);
-    
     void setWorldScale(int scale);
-    int getWorldScale();
+    int getWorldScale();    
+    
+    TerrainQuad getLoadedTerrainQuad(Vector3f location);
+    TerrainQuad getCachedTerrainQuad(Vector3f location);
 }

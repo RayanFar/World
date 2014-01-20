@@ -3,7 +3,6 @@ package world.core;
 import com.jme3.app.SimpleApplication;
 import com.jme3.app.state.AbstractAppState;
 import com.jme3.bullet.BulletAppState;
-import com.jme3.material.Material;
 import com.jme3.math.Vector3f;
 import com.jme3.renderer.queue.RenderQueue.ShadowMode;
 import com.jme3.terrain.geomipmap.TerrainLodControl;
@@ -28,30 +27,29 @@ public abstract class World extends AbstractAppState implements IWorld, Closeabl
             oldLocX = Integer.MAX_VALUE, oldLocZ = Integer.MAX_VALUE,
             positionAdjustment = 0,
             topLx, topLz, botRx, botRz,
-            totalVisibleChunks = 25;
+            totalVisibleChunks = 25,
+            worldScale = 1;
     
     private boolean isLoaded = false;
     private volatile boolean cacheInterrupted = false;
     
     private final int patchSize, blockSize;
-    
     private float worldHeight = 256f;
     
-    private int worldScale = 1;
-    
-    private TerrainListener terrainListener;
-    private ScheduledThreadPoolExecutor threadpool = new ScheduledThreadPoolExecutor(Runtime.getRuntime().availableProcessors());
-    
-    protected final Map<Vector3f, TerrainQuad> worldTiles = new HashMap<Vector3f, TerrainQuad>();
+    private final ScheduledThreadPoolExecutor threadpool = new ScheduledThreadPoolExecutor(Runtime.getRuntime().availableProcessors());
+
+    private final Map<Vector3f, TerrainQuad> worldTiles = new HashMap<Vector3f, TerrainQuad>();
     private final Set<Vector3f> worldTilesQue = new HashSet<Vector3f>();
-    protected final Map<Vector3f, TerrainQuad> worldTilesCache = new ConcurrentHashMap<Vector3f, TerrainQuad>();
+    private final Map<Vector3f, TerrainQuad> worldTilesCache = new ConcurrentHashMap<Vector3f, TerrainQuad>();
     private final ConcurrentLinkedQueue<TerrainQuad> newTiles = new ConcurrentLinkedQueue<TerrainQuad>();
     
-    public World(SimpleApplication app, int patchSize, int blockSize)
+    public World(SimpleApplication app, int patchSize, int blockSize, float height)
     {
         this.app = app;
         this.patchSize = patchSize;
         this.blockSize = blockSize;
+        
+        this.setPositionAdjustment((blockSize - 1) / 2);
     }
     
     public SimpleApplication getApplication() { return this.app; }
@@ -82,29 +80,28 @@ public abstract class World extends AbstractAppState implements IWorld, Closeabl
     public int getThreadPoolCount() { return threadpool.getPoolSize(); }
     public void setThreadPoolCount(int threadcount) { threadpool.setCorePoolSize(threadcount); }
 
-    protected int getPositionAdjustment() { return this.positionAdjustment; }
-    protected void setPositionAdjustment(int value) { this.positionAdjustment = value; }
+    protected final int getPositionAdjustment() { return this.positionAdjustment; }
+    protected final void setPositionAdjustment(int value) { this.positionAdjustment = value; }
 
     public int getPatchSize() { return this.patchSize; }
     public int getBlockSize() { return this.blockSize; }
 
-    public boolean terrainLoaded(TerrainQuad terrainQuad) { return this.terrainListener.terrainLoaded(terrainQuad);}
-    public void terrainLoadedThreaded(TerrainQuad terrainQuad) { this.terrainListener.terrainLoadedThreaded(terrainQuad); }
-    public boolean terrainUnloaded(TerrainQuad terrainQuad) { return this.terrainListener.terrainUnloaded(terrainQuad); }
+    public abstract boolean terrainLoaded(TerrainQuad terrainQuad);
+    public abstract boolean terrainUnloaded(TerrainQuad terrainQuad);
 
-    public TerrainListener getTerrainListener() { return this.terrainListener; }
-    public void setTerrainListener(TerrainListener listener) { this.terrainListener = listener; }
-    
     public boolean isLoaded() { return this.isLoaded; }
     
     public int getWorldScale() { return this.worldScale; }
     public void setWorldScale(int scale) 
     { 
         this.worldScale = scale;
-        this.setPositionAdjustment(((blockSize - 1) / 2) / this.worldScale);
+        this.setPositionAdjustment((blockSize - 1) / 2);
     }
     
-    public int bitCalc(int blockSize)
+    public TerrainQuad getLoadedTerrainQuad(Vector3f location) { return this.worldTiles.get(location); }
+    public TerrainQuad getCachedTerrainQuad(Vector3f location) { return this.worldTiles.get(location); }
+    
+    private int bitCalc(int blockSize)
     {
         switch (blockSize)
         {
@@ -117,21 +114,24 @@ public abstract class World extends AbstractAppState implements IWorld, Closeabl
             case 1025: return 10;
         }
 
+        
         throw new IllegalArgumentException("Invalid block size specified.");
     }
     
+    public int getBitShiftCount() { return this.bitCalc(blockSize); }
+    
     public Vector3f toTerrainLocation(Vector3f location)
     {
-        int x = (int)location.getX() >> this.bitCalc(blockSize);
-        int z = (int)location.getZ() >> this.bitCalc(blockSize);
+        int x = (int)location.getX() >> this.getBitShiftCount();
+        int z = (int)location.getZ() >> this.getBitShiftCount();
         
         return new Vector3f(x, 0, z);
     }
     
     public Vector3f fromTerrainLocation(Vector3f location)
     {
-        int x = (int)location.getX() << this.bitCalc(blockSize);
-        int z = (int)location.getZ() << this.bitCalc(blockSize);
+        int x = (int)location.getX() << this.getBitShiftCount();
+        int z = (int)location.getZ() << this.getBitShiftCount();
         
         return new Vector3f(x, 0, z);
     }
@@ -146,7 +146,6 @@ public abstract class World extends AbstractAppState implements IWorld, Closeabl
         {
             Map.Entry<Vector3f, TerrainQuad> entry = iterator.next();
             Vector3f quadLocation = entry.getKey();
-            
 
             if (quadLocation.getX() < topLx || quadLocation.getX() > botRx || quadLocation.getZ() < topLz || quadLocation.getZ() > botRz)
             {
@@ -249,20 +248,21 @@ public abstract class World extends AbstractAppState implements IWorld, Closeabl
                             {
                                 TerrainQuad newChunk = getTerrainQuad(location);
                                 
-                                // fire the terrainLoadedThreaded event
-                                terrainLoadedThreaded(newChunk);
-
-                                newTiles.add(newChunk);
-
-                                // thread safety...
-                                app.enqueue(new Callable<Boolean>()
+                                if (newChunk != null)
                                 {
-                                    public Boolean call()
+                                    newTiles.add(newChunk);
+
+                                    // thread safety...
+                                    app.enqueue(new Callable<Boolean>()
                                     {
-                                        worldTilesQue.remove(location);
-                                        return true;
-                                    }
-                                });
+                                        public Boolean call()
+                                        {
+                                            worldTilesQue.remove(location);
+                                            return true;
+                                        }
+                                    });
+                                }
+                                
                             }
                         });
 
@@ -293,12 +293,10 @@ public abstract class World extends AbstractAppState implements IWorld, Closeabl
                     // top
                     final Vector3f topLocation = new Vector3f(x, 0, topLz - 1);
                     final TerrainQuad topChunk = getTerrainQuad(topLocation);
-                    terrainLoadedThreaded(topChunk);
 
                     // bottom
                     final Vector3f bottomLocation = new Vector3f(x, 0, botRz + 1);
                     final TerrainQuad bottomChunk = getTerrainQuad(bottomLocation);
-                    terrainLoadedThreaded(bottomChunk);
 
                     app.enqueue(new Callable<Boolean>()
                     {
@@ -321,13 +319,11 @@ public abstract class World extends AbstractAppState implements IWorld, Closeabl
                     final Vector3f leftLocation = new Vector3f(topLx - 1, 0, z);
                     final TerrainQuad leftChunk = getTerrainQuad(leftLocation);
                     leftChunk.setShadowMode(ShadowMode.Receive);
-                    terrainLoadedThreaded(leftChunk);
 
                     // right
                     final Vector3f rightLocation = new Vector3f(botRx + 1, 0, z);
                     final TerrainQuad rightChunk = getTerrainQuad(rightLocation);
                     rightChunk.setShadowMode(ShadowMode.Receive);
-                    terrainLoadedThreaded(rightChunk);
 
                     app.enqueue(new Callable<Boolean>()
                     {
@@ -351,8 +347,11 @@ public abstract class World extends AbstractAppState implements IWorld, Closeabl
         int actualX = (int)(app.getCamera().getLocation().getX() + positionAdjustment);
         int actualZ = (int)(app.getCamera().getLocation().getZ() + positionAdjustment);
         
-        int locX = (int)actualX >> this.bitCalc(blockSize);
-        int locZ = (int)actualZ >> this.bitCalc(blockSize);
+        int locX = (int)actualX >> this.getBitShiftCount();
+        int locZ = (int)actualZ >> this.getBitShiftCount();
+        
+        locX /= worldScale;
+        locZ /= worldScale;
         
         if ((locX == oldLocX) && (locZ == oldLocZ) && worldTilesQue.isEmpty() && newTiles.isEmpty())
         {

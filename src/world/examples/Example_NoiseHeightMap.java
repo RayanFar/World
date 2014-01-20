@@ -6,6 +6,7 @@ import com.jme3.bullet.control.RigidBodyControl;
 import com.jme3.material.Material;
 import com.jme3.math.Vector3f;
 import com.jme3.renderer.queue.RenderQueue.ShadowMode;
+import com.jme3.scene.Node;
 import com.jme3.terrain.geomipmap.TerrainQuad;
 import com.jme3.terrain.noise.ShaderUtils;
 import com.jme3.terrain.noise.basis.FilteredBasis;
@@ -38,13 +39,13 @@ public class Example_NoiseHeightMap extends World
     }
     
     @Override
-    public boolean terrainLoaded(TerrainQuad terrainQuad)
+    public boolean worldItemLoaded(Node node)
     {
         // apply the material we created earlier to the terrain...
-        terrainQuad.setMaterial(terrainMaterial);
+        node.setMaterial(terrainMaterial);
         
         // set the shadow mode, if so desired...
-        terrainQuad.setShadowMode(ShadowMode.Receive);
+        node.setShadowMode(ShadowMode.Receive);
         
         // return true if we want to allow this terrain to load.
         // return false if we want to cancel this terrain loading.
@@ -52,7 +53,7 @@ public class Example_NoiseHeightMap extends World
     }
 
     @Override
-    public boolean terrainUnloaded(TerrainQuad terrainQuad)
+    public boolean worldItemUnloaded(Node node)
     {
         // return true if we want to allow this terrain to unload.
         // return false if we want to cancel this terrain from unloading.
@@ -60,14 +61,14 @@ public class Example_NoiseHeightMap extends World
     }
 
     @Override
-    public TerrainQuad getTerrainQuad(Vector3f location)
+    public Node getWorldItem(Vector3f location)
     {
         // check if the requested terrain is already loaded.
-        TerrainQuad tq = this.getLoadedTerrainQuad(location);
+        Node tq = this.getLoadedItem(location);
         if (tq != null) return tq;
         
         // check if the requested terrain is already cached.
-        tq = this.getCachedTerrainQuad(location);
+        tq = this.getCachedItem(location);
         if (tq != null) return tq;
         
         // doesnt exist anywhere, so we'll create it.

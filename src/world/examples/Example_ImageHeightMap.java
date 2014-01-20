@@ -18,9 +18,9 @@ public class Example_ImageHeightMap extends World
 {
     private final Material terrainMaterial;
     
-    public Example_ImageHeightMap(SimpleApplication app, int patchSize, int blockSize, float worldHeight)
+    public Example_ImageHeightMap(SimpleApplication app, int patchSize, int blockSize, float worldHeight, int worldScale)
     {
-        super(app, patchSize, blockSize, worldHeight);
+        super(app, patchSize, blockSize, worldHeight, worldScale);
         
         // Create a universal material to apply on all terrain.
         this.terrainMaterial = createTerrainMaterial();

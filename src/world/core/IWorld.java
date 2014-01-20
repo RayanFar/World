@@ -13,7 +13,6 @@ public interface IWorld
     int getViewDistanceSouth();
     int getViewDistanceWest();
     
-    void setWorldHeight(float height);
     float getWorldHeight();
     
     int getThreadPoolCount();
@@ -29,7 +28,6 @@ public interface IWorld
     
     boolean isLoaded();
     
-    void setWorldScale(int scale);
     int getWorldScale();    
     
     TerrainQuad getLoadedTerrainQuad(Vector3f location);

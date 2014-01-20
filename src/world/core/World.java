@@ -43,13 +43,13 @@ public abstract class World extends AbstractAppState implements IWorld, Closeabl
     private final Map<Vector3f, TerrainQuad> worldTilesCache = new ConcurrentHashMap<Vector3f, TerrainQuad>();
     private final ConcurrentLinkedQueue<TerrainQuad> newTiles = new ConcurrentLinkedQueue<TerrainQuad>();
     
-    public World(SimpleApplication app, int patchSize, int blockSize, float height)
+    public World(SimpleApplication app, int patchSize, int blockSize, float height, int worldScale)
     {
         this.app = app;
         this.patchSize = patchSize;
         this.blockSize = blockSize;
-        
-        this.setPositionAdjustment((blockSize - 1) / 2);
+        this.worldScale = worldScale;
+        this.positionAdjustment = (blockSize - 1) / 2;
     }
     
     public SimpleApplication getApplication() { return this.app; }
@@ -74,7 +74,6 @@ public abstract class World extends AbstractAppState implements IWorld, Closeabl
     public int getViewDistanceSouth() { return vd_south; }
     public int getViewDistanceWest() { return vd_west; }
 
-    public void setWorldHeight(float height) { this.worldHeight = height; }
     public float getWorldHeight() { return this.worldHeight; }
 
     public int getThreadPoolCount() { return threadpool.getPoolSize(); }
@@ -92,11 +91,6 @@ public abstract class World extends AbstractAppState implements IWorld, Closeabl
     public boolean isLoaded() { return this.isLoaded; }
     
     public int getWorldScale() { return this.worldScale; }
-    public void setWorldScale(int scale) 
-    { 
-        this.worldScale = scale;
-        this.setPositionAdjustment((blockSize - 1) / 2);
-    }
     
     public TerrainQuad getLoadedTerrainQuad(Vector3f location) { return this.worldTiles.get(location); }
     public TerrainQuad getCachedTerrainQuad(Vector3f location) { return this.worldTiles.get(location); }

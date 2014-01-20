@@ -25,9 +25,9 @@ public class Example_NoiseHeightMap extends World
     private final FilteredBasis filteredBasis;
     private final Material terrainMaterial;
     
-    public Example_NoiseHeightMap(SimpleApplication app, int patchSize, int blockSize, float worldHeight)
+    public Example_NoiseHeightMap(SimpleApplication app, int patchSize, int blockSize, float worldHeight, int worldScale)
     {
-        super(app, patchSize, blockSize, worldHeight);
+        super(app, patchSize, blockSize, worldHeight, worldScale);
         
         // Create a noise generator. In this example we will use the internal jme implementation,
         // But in reality any noise generation method could be used.
